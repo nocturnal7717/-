@@ -1,0 +1,81 @@
+<script>
+document.getElementById('review-form').onsubmit = function(event) {
+    event.preventDefault();
+    var imageInput = document.getElementById('review-image');
+    if (imageInput.files.length === 0) {
+        alert('이미지를 업로드해주세요.');
+        return;
+    }
+
+    // 이미지 파일을 읽어서 슬롯머신을 돌리도록 함
+    var reader = new FileReader();
+    reader.onload = function() {
+        spinSlots();
+    }
+    reader.readAsDataURL(imageInput.files[0]);
+};
+
+var options = [
+    "탄산음료 1캔", "탄산수 1병", "막걸리 1병", "맥주 1병", "소주 1병",
+    "하이볼 1잔", "간장새우 2마리", "양념게무침 1조각", "5만원 식사권", "10만원 식사권"
+];
+var probabilities = [0.52989, 0.10, 0.10, 0.10, 0.10, 0.03, 0.03, 0.01, 0.0001, 0.00001];
+
+var canvas = document.getElementById("canvas");
+var ctx = canvas.getContext("2d");
+var slotWidth = 100;
+var slotHeight = 100;
+var slots = [0, 1, 2]; // 첫 화면에 모든 항목이 순서대로 보이도록 초기화
+var slotSpeed = [20, 25, 30]; // 각 슬롯의 속도
+var resultIndex = -1;
+
+function drawSlots() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (var i = 0; i < slots.length; i++) {
+        var position = (slots[i] + options.length) % options.length; // 항목의 인덱스 계산
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, i * slotHeight, canvas.width, slotHeight);
+        ctx.fillStyle = "black";
+        ctx.font = "bold 20px Helvetica, Arial";
+        var text = options[position];
+        var textWidth = ctx.measureText(text).width;
+        ctx.fillText(text, (canvas.width - textWidth) / 2, (i + 0.5) * slotHeight);
+    }
+}
+
+function spinSlots() {
+    resultIndex = determinePrize();
+    var totalSpins = 200; // 슬롯 머신이 200번 회전하도록 설정 (10초 동안 회전)
+    var spinTime = 0;
+    var spinInterval = setInterval(function() {
+        spinTime++;
+        for (var i = 0; i < slots.length; i++) {
+            slots[i] = (slots[i] + 1) % options.length;
+        }
+        drawSlots();
+        if (spinTime >= totalSpins) {
+            clearInterval(spinInterval);
+            for (var i = 0; i < slots.length; i++) {
+                slots[i] = resultIndex;
+            }
+            drawSlots();
+            document.getElementById('result').innerText = `당첨된 메뉴: ${options[resultIndex]}`;
+        }
+    }, 50);
+}
+
+function determinePrize() {
+    var rand = Math.random();
+    var cumulativeProbability = 0.0;
+
+    for (var i = 0; i < probabilities.length; i++) {
+        cumulativeProbability += probabilities[i];
+        if (rand < cumulativeProbability) {
+            return i;
+        }
+    }
+    return probabilities.length - 1; // 기본값 (실제로 여기에 도달하면 안 됨)
+}
+
+drawSlots();
+</script>
